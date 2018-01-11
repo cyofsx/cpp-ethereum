@@ -263,6 +263,8 @@ string replaceCode(string const& _code)
         checkHexHasEvenLength(_code);
         return _code;
     }
+    if (_code.find("(module") == 0)
+        return wast2wasm(_code);
 
     string compiledCode = compileLLL(_code);
     if (_code.size() > 0)
@@ -395,6 +397,37 @@ string compileLLL(string const& _code)
     checkHexHasEvenLength(result);
     return result;
 #endif
+}
+
+#include <wasm-binary.h>
+#include <wasm-s-parser.h>
+#include <wasm-validator.h>
+
+/* from https://github.com/ewasm/evm2wasm */
+string wast2wasm(string const& input, bool debug = false)
+{
+    wasm::Module wasm;
+
+    try {
+        wasm::SExpressionParser parser(const_cast<char*>(input.c_str()));
+        wasm::Element& root = *parser.root;
+        wasm::SExpressionWasmBuilder builder(wasm, *root[0]);
+    } catch (wasm::ParseException& p) {
+        ostringstream err;
+        p.dump(err);
+        BOOST_ERROR("Error parsing wasm: " + err.str());
+    }
+
+    BOOST_REQUIRE_MESSAGE(wasm::WasmValidator().validate(module), "Compiled WASM module is not valid.");
+
+    wasm::BufferWithRandomAccess buffer(debug);
+    wasm::WasmBinaryWriter writer(&wasm, buffer, debug);
+    writer.write();
+
+    ostringstream output;
+    buffer.writeTo(output);
+
+    return "0x" + toHex(output);
 }
 
 void checkHexHasEvenLength(string const& _str)

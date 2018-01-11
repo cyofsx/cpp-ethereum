@@ -82,6 +82,7 @@ bytes processDataOrCode(json_spirit::mObject const& _o, std::string const& nodeN
 std::string replaceCode(std::string const& _code);
 void replaceCodeInState(json_spirit::mObject& _o);
 std::string compileLLL(std::string const& _code);
+string wast2wasm(string const& input, bool debug = false);
 std::string executeCmd(std::string const& _command);
 json_spirit::mValue parseYamlToJson(std::string const& _string);
 bytes importCode(json_spirit::mObject const& _o);
